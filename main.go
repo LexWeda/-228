@@ -8,179 +8,144 @@ import (
 	"strings"
 )
 
-var ROMANS = map[string]int{
-	"M": 1000, "D": 500, "C": 100,
-	"L": 50, "X": 10, "V": 5, "I": 1}
-
-func sum(a, b int) int {
-	return a + b
+var roman = map[string]int{
+	"C":    100,
+	"XC":   90,
+	"L":    50,
+	"XL":   40,
+	"X":    10,
+	"IX":   9,
+	"VIII": 8,
+	"VII":  7,
+	"VI":   6,
+	"V":    5,
+	"IV":   4,
+	"III":  3,
+	"II":   2,
+	"I":    1,
 }
-
-func sub(a, b int) int {
-	return a - b
+var convIntToRoman = [14]int{
+	100,
+	90,
+	50,
+	40,
+	10,
+	9,
+	8,
+	7,
+	6,
+	5,
+	4,
+	3,
+	2,
+	1,
 }
-
-func multy(a, b int) int {
-	return a * b
+var a, b *int
+var operators = map[string]func() int{
+	"+": func() int { return *a + *b },
+	"-": func() int { return *a - *b },
+	"/": func() int { return *a / *b },
+	"*": func() int { return *a * *b },
 }
+var data []string
 
-func div(a, b int) int {
-	return a / b
-}
+const (
+	LOW = "Вывод ошибки, так как строка " +
+		"не является математической операцией."
+	HIGH = "Вывод ошибки, так как формат математической операции " +
+		"не удовлетворяет заданию — два операнда и один оператор (+, -, /, *)."
+	SCALE = "Вывод ошибки, так как используются " +
+		"одновременно разные системы счисления."
+	DIV = "Вывод ошибки, так как в римской системе " +
+		"нет отрицательных чисел."
+	ZERO  = "Вывод ошибки, так как в римской системе нет числа 0."
+	RANGE = "Калькулятор умеет работать только с арабскими целыми " +
+		"числами или римскими цифрами от 1 до 10 включительно"
+)
 
-func findArg(line string) (string, error) {
-	switch {
-	case strings.Contains(line, "+"):
-		return "+", nil
-	case strings.Contains(line, "-"):
-		return "-", nil
-	case strings.Contains(line, "*"):
-		return "*", nil
-	case strings.Contains(line, "/"):
-		return "/", nil
-	default:
-		return "", fmt.Errorf("can't find operator")
-	}
-}
-
-func calculation(a, b int, op string) (num int, err error) {
-	switch op {
-	case "+":
-		num = sum(a, b)
-	case "-":
-		num = sub(a, b)
-	case "*":
-		num = multy(a, b)
-	case "/":
-		num = div(a, b)
-	default:
-		err = fmt.Errorf("%s not found", op)
-	}
-
-	return
-}
-
-func isRoman(num string) bool {
-	if _, err := ROMANS[strings.Split(num, "")[0]]; err {
-		return true
-	}
-
-	return false
-}
-
-func romanToInt(num string) int {
-
-	sum := 0
-	n := len(num)
-
-	for i := 0; i < n; i++ {
-		if i != n-1 && ROMANS[string(num[i])] < ROMANS[string(num[i+1])] {
-			sum += ROMANS[string(num[i+1])] - ROMANS[string(num[i])]
-			i++
-			continue
-		}
-
-		sum += ROMANS[string(num[i])]
-	}
-
-	return sum
-}
-
-func intToRoman(num int) string {
-	var roman string = ""
-	var numbers = []int{1, 4, 5, 9, 10, 40, 50, 90, 100, 400, 500, 900, 1000}
-	var romans = []string{"I", "IV", "V", "IX", "X", "XL", "L", "XC", "C", "CD", "D", "CM", "M"}
-	var index = len(romans) - 1
-
-	for num > 0 {
-		for numbers[index] <= num {
-			roman += romans[index]
-			num -= numbers[index]
-		}
-		index -= 1
-	}
-
-	return roman
-}
-
-func getNumsAndType(line string, op string) (a, b int, rom bool, err error) {
-	nums := strings.Split(line, op)
-
-	if len(nums) > 2 {
-		return a, b, rom, fmt.Errorf("many operators")
-	}
-
-	firstRomType := isRoman(nums[0])
-	secondRomType := isRoman(nums[1])
-
-	if firstRomType != secondRomType {
-		return a, b, rom, fmt.Errorf("different format")
-	}
-
-	if firstRomType && secondRomType {
-		rom = true
-		a = romanToInt(nums[0])
-		b = romanToInt(nums[1])
-	} else {
-		a, err = strconv.Atoi(nums[0])
-		if err != nil {
-			return
-		}
-
-		b, err = strconv.Atoi(nums[1])
-		if err != nil {
-			return
-		}
-	}
-
-	if a < 1 || a > 10 || b < 0 || b > 10 {
-		return a, b, rom, fmt.Errorf("%d or %d less 0 or more 10", a, b)
-	}
-
-	return a, b, rom, nil
-}
-
-func main() {
-	reader := bufio.NewReader(os.Stdin)
-
-	for {
-		fmt.Println("Для выхода введите !exit\nВведите пример: ")
-		line, _ := reader.ReadString('\n')
-		line = strings.TrimSpace(line)
-		line = strings.ReplaceAll(line, " ", "")
-
-		if line == "!exit" {
-			fmt.Println("exiting..")
-			return
-		}
-
-		operator, err := findArg(line)
-		if err != nil {
-			panic(err)
-		}
-
-		a, b, isRom, err := getNumsAndType(line, operator)
-		if err != nil {
-			panic(err)
-		}
-
-		result, err := calculation(a, b, operator)
-		if err != nil {
-			panic(err)
-		}
-
-		if isRom {
-			if result <= 0 {
-				panic("roman numbers can't less 0")
+func base(s string) {
+	var operator string
+	var stringsFound int
+	numbers := make([]int, 0)
+	romans := make([]string, 0)
+	romansToInt := make([]int, 0)
+	for idx := range operators {
+		for _, val := range s {
+			if idx == string(val) {
+				operator += idx
+				data = strings.Split(s, operator)
 			}
-
-			first := intToRoman(a)
-			second := intToRoman(b)
-			res := intToRoman(result)
-
-			fmt.Println(first, operator, second, "=", res)
-		} else {
-			fmt.Println(a, operator, b, "=", result)
 		}
+	}
+	switch {
+	case len(operator) > 1:
+		panic(HIGH)
+	case len(operator) < 1:
+		panic(LOW)
+	}
+	for _, elem := range data {
+		num, err := strconv.Atoi(elem)
+		if err != nil {
+			stringsFound++
+			romans = append(romans, elem)
+		} else {
+			numbers = append(numbers, num)
+		}
+	}
+
+	switch stringsFound {
+	case 1:
+		panic(SCALE)
+	case 0:
+		errCheck := numbers[0] > 0 && numbers[0] < 11 &&
+			numbers[1] > 0 && numbers[1] < 11
+		if val, ok := operators[operator]; ok && errCheck == true {
+			a, b = &numbers[0], &numbers[1]
+			fmt.Println(val())
+		} else {
+			panic(RANGE)
+		}
+	case 2:
+		for _, elem := range romans {
+			if val, ok := roman[elem]; ok && val > 0 && val < 11 {
+				romansToInt = append(romansToInt, val)
+			} else {
+				panic(RANGE)
+			}
+		}
+		if val, ok := operators[operator]; ok {
+			a, b = &romansToInt[0], &romansToInt[1]
+			intToRoman(val())
+		}
+	}
+}
+func intToRoman(romanResult int) {
+	var romanNum string
+	if romanResult == 0 {
+		panic(ZERO)
+	} else if romanResult < 0 {
+		panic(DIV)
+	}
+	for romanResult > 0 {
+		for _, elem := range convIntToRoman {
+			for i := elem; i <= romanResult; {
+				for index, value := range roman {
+					if value == elem {
+						romanNum += index
+						romanResult -= elem
+					}
+				}
+			}
+		}
+	}
+	fmt.Println(romanNum)
+}
+func Start() {
+	fmt.Println("Welcome to kata-calculator")
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		console, _ := reader.ReadString('\n')
+		s := strings.ReplaceAll(console, " ", "")
+		base(strings.ToUpper(strings.TrimSpace(s)))
 	}
 }
